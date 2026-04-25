@@ -15,7 +15,9 @@ import uuid from 'licia/uuid'
 import { getPackages } from './package'
 import {
   IFile,
+  IpcCopyDir,
   IpcCreateDir,
+  IpcCreateFile,
   IpcDeleteDir,
   IpcDeleteFile,
   IpcMoveFile,
@@ -401,13 +403,13 @@ async function fileShell(
   return shell(deviceId, `${cmd} "${path}"`)
 }
 
-const statFile: IpcStatFile = async function (deviceId, path) {
-  if (startWith(path, '/data/data/')) {
+const statFile: IpcStatFile = async function (deviceId, p) {
+  if (startWith(p, '/data/data/')) {
     if (!(await isRooted(deviceId))) {
-      const ls = await fileShell(deviceId, 'ls -ld', path)
+      const ls = await fileShell(deviceId, 'ls -ld', p)
       const item = parseLsLine(trim(ls))
       if (!item) {
-        throw new Error(`Failed to stat file: ${path}`)
+        throw new Error(`Failed to stat file: ${p}`)
       }
       return {
         size: item.size,
@@ -419,7 +421,7 @@ const statFile: IpcStatFile = async function (deviceId, path) {
   }
 
   const device = await client.getDevice(deviceId)
-  const stat = await device.stat(path)
+  const stat = await device.stat(p)
 
   return {
     size: stat.size,
@@ -427,6 +429,14 @@ const statFile: IpcStatFile = async function (deviceId, path) {
     directory: !stat.isFile(),
     mode: stat.mode,
   }
+}
+
+const createFile: IpcCreateFile = async function (deviceId, p) {
+  await fileShell(deviceId, 'touch', p)
+}
+
+const copyDir: IpcCopyDir = async function (deviceId, src, dest) {
+  await fileShell(deviceId, 'cp -r', src, dest)
 }
 
 export async function init(c: Client) {
@@ -439,6 +449,8 @@ export async function init(c: Client) {
   handleEvent('deleteFile', deleteFile)
   handleEvent('deleteDir', deleteDir)
   handleEvent('createDir', createDir)
+  handleEvent('createFile', createFile)
+  handleEvent('copyDir', copyDir)
   handleEvent('moveFile', moveFile)
   handleEvent('statFile', statFile)
 }

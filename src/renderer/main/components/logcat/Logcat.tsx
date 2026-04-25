@@ -1,9 +1,9 @@
 import { observer } from 'mobx-react-lite'
 import LunaToolbar, {
-  LunaToolbarInput,
   LunaToolbarSelect,
   LunaToolbarSeparator,
   LunaToolbarSpace,
+  LunaToolbarHtml,
 } from 'luna-toolbar/react'
 import LunaLogcat from 'luna-logcat/react'
 import Logcat from 'luna-logcat'
@@ -12,6 +12,8 @@ import rpad from 'licia/rpad'
 import dateFormat from 'licia/dateFormat'
 import toNum from 'licia/toNum'
 import trim from 'licia/trim'
+import contain from 'licia/contain'
+import lowerCase from 'licia/lowerCase'
 import { useEffect, useRef, useState } from 'react'
 import store from '../../store'
 import copy from 'licia/copy'
@@ -20,6 +22,8 @@ import toStr from 'licia/toStr'
 import { t } from 'common/util'
 import ToolbarIcon from 'share/renderer/components/ToolbarIcon'
 import contextMenu from 'share/renderer/lib/contextMenu'
+import FilterInput from './FilterInput'
+import logcatStyles from './logcat.module.scss'
 
 export default observer(function Logcat() {
   const [view, setView] = useState<'compact' | 'standard'>('standard')
@@ -29,21 +33,95 @@ export default observer(function Logcat() {
     priority?: number
     package?: string
     tag?: string
+    keyword?: string
   }>({})
+  const [filterHistory, setFilterHistory] = useState<{
+    package: string[]
+    tag: string[]
+    keyword: string[]
+  }>({
+    package: [],
+    tag: [],
+    keyword: [],
+  })
   const logcatRef = useRef<Logcat>(null)
   const entriesRef = useRef<any[]>([])
   const logcatIdRef = useRef('')
 
   const { device } = store
 
+  // 加载历史记录
+  useEffect(() => {
+    const saved = localStorage.getItem('logcat-filter-history')
+    if (saved) {
+      try {
+        setFilterHistory(JSON.parse(saved))
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [])
+
+  // 保存历史记录
+  function saveToHistory(type: 'package' | 'tag' | 'keyword', value: string) {
+    if (!value || value.trim() === '') return
+    const trimmed = value.trim()
+    setFilterHistory((prev) => {
+      const newList = [trimmed, ...prev[type].filter((v) => v !== trimmed)].slice(
+        0,
+        10
+      )
+      const newHistory = { ...prev, [type]: newList }
+      localStorage.setItem('logcat-filter-history', JSON.stringify(newHistory))
+      return newHistory
+    })
+  }
+
+  // 删除历史记录
+  function deleteFromHistory(type: 'package' | 'tag' | 'keyword', value: string) {
+    setFilterHistory((prev) => {
+      const newList = prev[type].filter((v) => v !== value)
+      const newHistory = { ...prev, [type]: newList }
+      localStorage.setItem('logcat-filter-history', JSON.stringify(newHistory))
+      return newHistory
+    })
+  }
+
+  // 处理输入框变化
+  function handleFilterChange(
+    type: 'package' | 'tag' | 'keyword',
+    value: string
+  ) {
+    setFilter({ ...filter, [type]: value || undefined })
+  }
+
+  // 处理提交（按回车或选择历史记录）
+  function handleFilterCommit(
+    type: 'package' | 'tag' | 'keyword',
+    value: string
+  ) {
+    saveToHistory(type, value)
+  }
+
   useEffect(() => {
     function onLogcatEntry(id, entry) {
       if (logcatIdRef.current !== id) {
         return
       }
+      entriesRef.current.push(entry)
       if (logcatRef.current) {
+        // 应用所有过滤条件
+        if (
+          (filter.priority !== undefined && entry.priority < filter.priority) ||
+          (filter.package && entry.package !== filter.package) ||
+          (filter.tag && entry.tag !== filter.tag) ||
+          (filter.keyword &&
+            !contain(lowerCase(entry.message), lowerCase(filter.keyword)) &&
+            !contain(lowerCase(entry.tag), lowerCase(filter.keyword)))
+        ) {
+          return
+        }
         logcatRef.current.append(entry)
-        entriesRef.current.push(entry)
       }
     }
     const offLogcatEntry = main.on('logcatEntry', onLogcatEntry)
@@ -59,7 +137,27 @@ export default observer(function Logcat() {
         main.closeLogcat(logcatIdRef.current)
       }
     }
-  }, [])
+  }, [filter, device])
+
+  useEffect(() => {
+    const logcat = logcatRef.current
+    if (!logcat) return
+    logcat.clear()
+    for (const entry of entriesRef.current) {
+      // 应用所有过滤条件
+      if (
+        (filter.priority !== undefined && entry.priority < filter.priority) ||
+        (filter.package && entry.package !== filter.package) ||
+        (filter.tag && entry.tag !== filter.tag) ||
+        (filter.keyword &&
+          !contain(lowerCase(entry.message), lowerCase(filter.keyword)) &&
+          !contain(lowerCase(entry.tag), lowerCase(filter.keyword)))
+      ) {
+        continue
+      }
+      logcat.append(entry)
+    }
+  }, [filter])
 
   if (store.panel !== 'logcat') {
     if (!paused && logcatIdRef.current) {
@@ -138,18 +236,6 @@ export default observer(function Logcat() {
                 priority: toNum(val),
               })
               break
-            case 'package':
-              setFilter({
-                ...filter,
-                package: val,
-              })
-              break
-            case 'tag':
-              setFilter({
-                ...filter,
-                tag: val,
-              })
-              break
           }
         }}
       >
@@ -175,15 +261,42 @@ export default observer(function Logcat() {
             ERROR: '6',
           }}
         />
-        <LunaToolbarInput
-          keyName="package"
-          placeholder={t('package')}
-          value={filter.package || ''}
-        />
-        <LunaToolbarInput
-          keyName="tag"
-          placeholder={t('tag')}
-          value={filter.tag || ''}
+        <LunaToolbarHtml
+          className={logcatStyles.filterInputContainer}
+          disabled={!device}
+        >
+          <FilterInput
+            type="package"
+            placeholder={t('package')}
+            value={filter.package || ''}
+            history={filterHistory.package}
+            onChange={(val) => handleFilterChange('package', val)}
+            onCommit={(val) => handleFilterCommit('package', val)}
+            onDeleteHistory={(val) => deleteFromHistory('package', val)}
+          />
+          <FilterInput
+            type="tag"
+            placeholder={t('tag')}
+            value={filter.tag || ''}
+            history={filterHistory.tag}
+            onChange={(val) => handleFilterChange('tag', val)}
+            onCommit={(val) => handleFilterCommit('tag', val)}
+            onDeleteHistory={(val) => deleteFromHistory('tag', val)}
+          />
+          <FilterInput
+            type="keyword"
+            placeholder={t('keyword')}
+            value={filter.keyword || ''}
+            history={filterHistory.keyword}
+            onChange={(val) => handleFilterChange('keyword', val)}
+            onCommit={(val) => handleFilterCommit('keyword', val)}
+            onDeleteHistory={(val) => deleteFromHistory('keyword', val)}
+          />
+        </LunaToolbarHtml>
+        <ToolbarIcon
+          icon="close"
+          title={t('clearFilter')}
+          onClick={() => setFilter({})}
         />
         <LunaToolbarSpace />
         <ToolbarIcon
@@ -245,7 +358,6 @@ export default observer(function Logcat() {
       <LunaLogcat
         className="panel-body"
         maxNum={10000}
-        filter={filter}
         wrapLongLines={softWrap}
         onContextMenu={onContextMenu}
         view={view}

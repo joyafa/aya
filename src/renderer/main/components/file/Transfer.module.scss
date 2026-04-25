@@ -7,3 +7,57 @@
     background: transparent;
   }
 }
+
+.progressWrap {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  background: var(--color-bg-container-darker);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.progressText {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionBtn {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--color-border);
+  }
+}
+
+.pause,
+.resume {
+  color: var(--color-primary);
+}
+
+.cancel {
+  color: var(--color-error, #ff4d4f);
+}

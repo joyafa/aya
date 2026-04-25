@@ -29,3 +29,29 @@
 .icon {
   margin-top: -15px;
 }
+
+// 列表组件字体增加 2px
+:global(.luna-data-grid),
+:global(.luna-data-grid .luna-data-grid-cell) {
+  font-size: 16px;
+}
+
+:global(.luna-file-list),
+:global(.luna-file-list .luna-file-list-file-name) {
+  font-size: 16px;
+}
+
+:global(.luna-icon-list),
+:global(.luna-icon-list .luna-icon-list-text) {
+  font-size: 16px;
+}
+
+:global(.luna-logcat) {
+  font-size: 16px;
+  :global(.luna-logcat-entry) {
+    font-size: 16px;
+  }
+  :global(.luna-logcat-content) {
+    font-size: 16px;
+  }
+}

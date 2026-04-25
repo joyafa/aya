@@ -11,7 +11,7 @@ import isEmpty from 'licia/isEmpty'
 import isNull from 'licia/isNull'
 import Style from './Application.module.scss'
 import { observer } from 'mobx-react-lite'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import store from '../../store'
 import { PannelLoading } from '../common/loading'
 import ToolbarIcon from 'share/renderer/components/ToolbarIcon'
@@ -37,6 +37,7 @@ import DataGrid from 'luna-data-grid'
 import { useWindowResize } from 'share/renderer/lib/hooks'
 import fileSize from 'licia/fileSize'
 import jsonClone from 'licia/jsonClone'
+import useQuickLocate from '../../lib/useQuickLocate'
 
 export default observer(function Application() {
   const [isLoading, setIsLoading] = useState(false)
@@ -55,8 +56,18 @@ export default observer(function Application() {
   })
   const draggingRef = useRef(0)
   const iconsRef = useRef<any[]>([])
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const { device } = store
+
+  const quickLocate = useQuickLocate(packageInfos, (info: IPackageInfo) => info.label)
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!containerRef.current) return
+      quickLocate(e, containerRef.current)
+    },
+    [quickLocate]
+  )
 
   useEffect(() => {
     refresh()
@@ -99,6 +110,10 @@ export default observer(function Application() {
         })
         setPackageInfos(packageInfos)
       }
+      packageInfos.sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      )
+      setPackageInfos(packageInfos)
       setIsLoading(false)
     } else {
       const idx = findIdx(
@@ -279,6 +294,9 @@ export default observer(function Application() {
 
   const applications = (
     <div
+      ref={containerRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       className={Style.applications}
       style={{
         overflowY: store.application.listView ? 'hidden' : 'auto',

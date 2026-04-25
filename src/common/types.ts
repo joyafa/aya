@@ -131,6 +131,17 @@ export type IpcCreateDir = (deviceId: string, path: string) => Promise<void>
 export type IpcDeleteDir = IpcCreateDir
 export type IpcDeleteFile = IpcCreateDir
 export type IpcOpenFile = IpcCreateDir
+export type IpcCreateFile = IpcCreateDir
+export type IpcCopyDir = (
+  deviceId: string,
+  src: string,
+  dest: string
+) => Promise<void>
+export type IpcPauseTransfer = (id: string) => void
+export type IpcResumeTransfer = IpcPauseTransfer
+export type IpcCancelTransfer = IpcPauseTransfer
+export type IpcStartDrag = (filePath: string, icon: string) => void
+export type IpcGetTmpdir = () => string
 export type IpcPushFile = (
   deviceId: string,
   src: string,

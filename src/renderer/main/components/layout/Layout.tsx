@@ -57,21 +57,53 @@ export default observer(function Layout() {
     }
 
     setIsLoading(true)
-    const data = await main.screencap(device.id)
-    const url = dataUrl.stringify(data, 'image/png')
-    setHierarchy(null)
-    setSelected(null)
-    loadImg(url, (err, img) => {
-      setImage({
-        url,
-        width: img.width,
-        height: img.height,
+    try {
+      // 先检查设备是否可以获取截图
+      const data = await main.screencap(device.id)
+      if (!data) {
+        notify('无法获取截图，请确保设备已连接并解锁屏幕', { icon: 'error' })
+        setIsLoading(false)
+        return
+      }
+
+      const url = dataUrl.stringify(data, 'image/png')
+      if (!url) {
+        notify('截图数据格式错误', { icon: 'error' })
+        setIsLoading(false)
+        return
+      }
+
+      setHierarchy(null)
+      setSelected(null)
+
+      loadImg(url, (err, img) => {
+        if (err) {
+          notify('加载截图失败：' + err.message, { icon: 'error' })
+          setIsLoading(false)
+          return
+        }
+        if (!img.width || !img.height) {
+          notify('截图尺寸无效', { icon: 'error' })
+          setIsLoading(false)
+          return
+        }
+        setImage({
+          url,
+          width: img.width,
+          height: img.height,
+        })
       })
-    })
-    windowHierarchyRef.current = await main.dumpWindowHierarchy(device.id)
-    const doc = xmlToDom(windowHierarchyRef.current)
-    transformHierarchy(doc, windowHierarchyRef.current)
-    setHierarchy(doc)
+
+      windowHierarchyRef.current = await main.dumpWindowHierarchy(device.id)
+      if (windowHierarchyRef.current) {
+        const doc = xmlToDom(windowHierarchyRef.current)
+        transformHierarchy(doc, windowHierarchyRef.current)
+        setHierarchy(doc)
+      }
+    } catch (e) {
+      notify('刷新失败：' + String(e), { icon: 'error' })
+      console.error('Layout refresh error:', e)
+    }
     setIsLoading(false)
   }
 

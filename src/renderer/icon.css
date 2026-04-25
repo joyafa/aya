@@ -191,3 +191,12 @@
 .icon-eye:before {
   content: '\f13b';
 }
+.icon-sort:before {
+  content: '\f13c';
+}
+.icon-sort-asc:before {
+  content: '\f13d';
+}
+.icon-sort-desc:before {
+  content: '\f13e';
+}

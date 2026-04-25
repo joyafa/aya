@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /d/code/aya log --oneline -10)",
+      "Bash(git -C /d/code/aya remote -v)",
+      "Bash(git -C /d/code/aya branch -a)",
+      "WebSearch",
+      "mcp__fetch__fetch"
+    ]
+  }
+}

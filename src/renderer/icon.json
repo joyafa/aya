@@ -57,5 +57,8 @@
   "video-recorder.svg",
   "open-file.svg",
   "clear.svg",
-  "eye.svg"
+  "eye.svg",
+  "sort.svg",
+  "sort-asc.svg",
+  "sort-desc.svg"
 ]

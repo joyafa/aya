@@ -24,16 +24,27 @@ import contain from 'licia/contain'
 import find from 'licia/find'
 import DataGrid from 'luna-data-grid'
 import { useWindowResize } from 'share/renderer/lib/hooks'
+import useQuickLocate from '../../lib/useQuickLocate'
 
 export default observer(function Process() {
   const [processes, setProcesses] = useState<any[]>([])
   const packagesRef = useRef<string[]>([])
   const packageInfosRef = useRef<any[]>([])
   const dataGridRef = useRef<DataGrid>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<any>(null)
   const [filter, setFilter] = useState('')
 
   const { device } = store
+
+  const quickLocate = useQuickLocate(processes, (p: any) => p.name)
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!containerRef.current) return
+      quickLocate(e, containerRef.current)
+    },
+    [quickLocate]
+  )
 
   const getPackageInfos = useCallback(
     singleton(async function () {
@@ -98,6 +109,9 @@ export default observer(function Process() {
             return false
           })
         }
+        processes.sort((a: any, b: any) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        )
         setProcesses(processes)
       }
     }),
@@ -167,11 +181,17 @@ export default observer(function Process() {
           onClick={stop}
         />
       </LunaToolbar>
-      <LunaDataGrid
-        onSelect={(node) => setSelected(node.data)}
-        onDeselect={() => setSelected(null)}
-        filter={filter}
-        className={Style.processes}
+      <div
+        ref={containerRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="panel-body"
+      >
+        <LunaDataGrid
+          onSelect={(node) => setSelected(node.data)}
+          onDeselect={() => setSelected(null)}
+          filter={filter}
+          className={Style.processes}
         data={processes}
         columns={columns}
         selectable={true}
@@ -181,6 +201,7 @@ export default observer(function Process() {
           dataGrid.fit()
         }}
       />
+      </div>
     </div>
   )
 })

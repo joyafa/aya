@@ -25,7 +25,7 @@ export interface IImage {
 }
 
 export default observer(function Screenshot(props: IProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(document.createElement('canvas'))
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const imageRef = useRef(new Image())
   const propsRef = useRef(props)
 
@@ -34,6 +34,9 @@ export default observer(function Screenshot(props: IProps) {
   }, [props])
 
   useEffect(() => {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas')
+    }
     const canvas = canvasRef.current
 
     let isClick = true
@@ -59,6 +62,9 @@ export default observer(function Screenshot(props: IProps) {
   }, [])
 
   useEffect(() => {
+    if (!canvasRef.current || !props.image.width) {
+      return
+    }
     canvasRef.current.width = props.image.width
     canvasRef.current.height = props.image.height
     imageRef.current.src = props.image.url
@@ -92,11 +98,10 @@ export default observer(function Screenshot(props: IProps) {
       drawSelected(ctx, props.selected)
     }
   }
-  draw()
 
   return (
     <div className={Style.container}>
-      {props.image.url && (
+      {props.image.url && canvasRef.current && (
         <LunaImageViewer
           image={canvasRef.current}
           onCreate={props.onImageViewerCreate}

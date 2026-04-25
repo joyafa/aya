@@ -2,7 +2,7 @@
   "name": "aya",
   "productName": "AYA",
   "appId": "io.liriliri.aya",
-  "version": "1.14.2",
+  "version": "1.14.9",
   "description": "Android adb desktop app",
   "main": "dist/main/index.js",
   "scripts": {
@@ -96,5 +96,8 @@
     "webm-muxer": "^5.1.2",
     "xml2js": "^0.6.2",
     "zx": "^8.8.0"
+  },
+  "dependencies": {
+    "luna-drag-selector": "^0.1.0"
   }
 }

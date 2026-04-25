@@ -50,13 +50,25 @@ export class File {
     main.on('updateTransfer', (id, transferred) => {
       if (this.showTransfer) {
         const transfer = this.transfers.find((t) => t.id === id)
-        if (transfer) {
+        if (transfer && !transfer.paused) {
           transfer.update(transferred)
         }
       }
     })
     main.on('finishTransfer', (id) => {
       this.transfers = filter(this.transfers, (t) => t.id !== id)
+    })
+    main.on('pauseTransfer', (id: string) => {
+      const transfer = this.transfers.find((t) => t.id === id)
+      if (transfer) {
+        transfer.pause()
+      }
+    })
+    main.on('resumeTransfer', (id: string) => {
+      const transfer = this.transfers.find((t) => t.id === id)
+      if (transfer) {
+        transfer.resume()
+      }
     })
   }
 }
@@ -71,6 +83,7 @@ class Transfer {
   duration = 0
   size = 0
   transferred = 0
+  paused = false
   constructor(
     id: string,
     type: TransferType,
@@ -88,11 +101,21 @@ class Transfer {
     makeObservable(this, {
       transferred: observable,
       duration: observable,
+      paused: observable,
       update: action,
+      pause: action,
+      resume: action,
     })
   }
   update(transferred: number) {
     this.duration = now() - this.startTime.getTime()
     this.transferred = transferred
+  }
+  pause() {
+    this.paused = true
+  }
+  resume() {
+    this.paused = false
+    this.startTime = new Date(Date.now() - this.duration)
   }
 }
