@@ -78,6 +78,9 @@ export default observer(function File() {
               await main.deleteFile(device!.id, filePath)
             }
           }
+          setSelected(undefined)
+          setSelectedFiles([])
+          setSelectedUrl('')
           getFiles(path)
         }
         return
@@ -91,11 +94,14 @@ export default observer(function File() {
           selected.name
         )
         if (name && name !== selected.name) {
-          if (fileExist(name)) {
+          if (fileExist(name, selected)) {
             notify(t('fileExistErr', { name }), { icon: 'error' })
             return
           }
           await main.moveFile(device!.id, path + selected.name, path + name)
+          setSelected(undefined)
+          setSelectedFiles([])
+          setSelectedUrl('')
           getFiles(path)
         }
         return
@@ -235,9 +241,9 @@ export default observer(function File() {
     }
   }
 
-  function fileExist(name: string) {
+  function fileExist(name: string, excludeFile?: IFile) {
     for (let i = 0, len = fileList.length; i < len; i++) {
-      if (fileList[i].name === name) {
+      if (fileList[i].name === name && fileList[i] !== excludeFile) {
         return true
       }
     }
@@ -854,6 +860,7 @@ export default observer(function File() {
                   onDeselect={() => {
                     setSelectedUrl('')
                     setSelected(undefined)
+                    setSelectedFiles([])
                   }}
                 />
               </div>
