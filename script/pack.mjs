@@ -34,6 +34,8 @@ const config = {
         target: 'nsis',
       },
     ],
+    signingHashAlgorithms: [],
+    sign: null,
   },
   mac: {
     electronLanguages: ['zh_CN', 'en'],
