@@ -54,6 +54,38 @@ export default observer(function File() {
     async (e: React.KeyboardEvent) => {
       if (!fileListContainerRef.current) return
 
+      // 上下方向键：移动选中文件
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && fileList.length > 0) {
+        e.preventDefault()
+        if (!selected) {
+          // 如果没有选中文件，选中第一个
+          const firstFile = fileList[0]
+          setSelected(firstFile)
+          setSelectedFiles([firstFile])
+          main.getFileUrl(device!.id, path + firstFile.name).then((url) => {
+            setSelectedUrl(url)
+          })
+        } else {
+          // 找到当前选中文件的索引
+          const currentIdx = fileList.findIndex((f) => f.name === selected.name)
+          let newIdx = currentIdx
+          if (e.key === 'ArrowUp' && currentIdx > 0) {
+            newIdx = currentIdx - 1
+          } else if (e.key === 'ArrowDown' && currentIdx < fileList.length - 1) {
+            newIdx = currentIdx + 1
+          }
+          if (newIdx !== currentIdx) {
+            const newFile = fileList[newIdx]
+            setSelected(newFile)
+            setSelectedFiles([newFile])
+            main.getFileUrl(device!.id, path + newFile.name).then((url) => {
+              setSelectedUrl(url)
+            })
+          }
+        }
+        return
+      }
+
       // Enter: 打开文件/目录
       if (e.key === 'Enter' && selected) {
         openRef.current?.(selected)
