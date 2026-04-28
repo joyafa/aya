@@ -142,6 +142,13 @@ export type IpcResumeTransfer = IpcPauseTransfer
 export type IpcCancelTransfer = IpcPauseTransfer
 export type IpcStartDrag = (filePath: string, icon: string) => void
 export type IpcGetTmpdir = () => string
+
+export type ClipboardFile = {
+  path: string
+  name: string
+  isDirectory: boolean
+}
+export type IpcReadClipboardFiles = () => Promise<ClipboardFile[]>
 export type IpcPushFile = (
   deviceId: string,
   src: string,

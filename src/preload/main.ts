@@ -55,6 +55,7 @@ import {
   IpcWipeAvdData,
   IpcWriteShell,
   IpcGetTmpdir,
+  IpcReadClipboardFiles,
 } from 'common/types'
 import { IpcGetStore, IpcSetStore } from 'share/common/types'
 import mainObj from 'share/preload/main'
@@ -139,4 +140,5 @@ export default Object.assign(mainObj, {
   cancelTransfer: invoke<IpcCancelTransfer>('cancelTransfer'),
   startDrag: invoke<IpcStartDrag>('startDrag'),
   getTmpdir: invoke<IpcGetTmpdir>('getTmpdir'),
+  readClipboardFiles: invoke<IpcReadClipboardFiles>('readClipboardFiles'),
 })

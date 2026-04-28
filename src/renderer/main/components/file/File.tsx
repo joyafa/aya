@@ -170,29 +170,52 @@ export default observer(function File() {
       }
 
       // Ctrl+V: 粘贴
-      if (e.key === 'v' && (e.ctrlKey || e.metaKey) && clipboardRef.current) {
+      if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
-        const { type, files, srcPath } = clipboardRef.current
-        for (const file of files) {
-          const srcFilePath = srcPath + file.name
-          const destFilePath = path + file.name
-          if (type === 'copy') {
-            if (file.directory) {
-              await main.copyDir(device!.id, srcFilePath, destFilePath)
-            } else {
-              const tmpDir = await main.getTmpdir()
-              const tmpPath = tmpDir + '/' + file.name
-              await main.pullFile(device!.id, srcFilePath, tmpPath)
-              await main.pushFile(device!.id, tmpPath, destFilePath)
+
+        // 优先检查系统剪贴板
+        const systemClipboardFiles = await main.readClipboardFiles()
+        if (systemClipboardFiles.length > 0) {
+          // 从系统剪贴板粘贴
+          for (const file of systemClipboardFiles) {
+            const destFilePath = path + file.name
+
+            if (file.isDirectory) {
+              // 暂不支持目录粘贴
+              notify(t('dirDragNotSupported'), { icon: 'error' })
+              continue
             }
-          } else if (type === 'cut') {
-            await main.moveFile(device!.id, srcFilePath, destFilePath)
+
+            await main.pushFile(device!.id, file.path, destFilePath)
           }
+          getFiles(path)
+          return
         }
-        if (type === 'cut') {
-          clipboardRef.current = null
+
+        // 使用应用内部剪贴板
+        if (clipboardRef.current) {
+          const { type, files, srcPath } = clipboardRef.current
+          for (const file of files) {
+            const srcFilePath = srcPath + file.name
+            const destFilePath = path + file.name
+            if (type === 'copy') {
+              if (file.directory) {
+                await main.copyDir(device!.id, srcFilePath, destFilePath)
+              } else {
+                const tmpDir = await main.getTmpdir()
+                const tmpPath = tmpDir + '/' + file.name
+                await main.pullFile(device!.id, srcFilePath, tmpPath)
+                await main.pushFile(device!.id, tmpPath, destFilePath)
+              }
+            } else if (type === 'cut') {
+              await main.moveFile(device!.id, srcFilePath, destFilePath)
+            }
+          }
+          if (type === 'cut') {
+            clipboardRef.current = null
+          }
+          getFiles(path)
         }
-        getFiles(path)
         return
       }
 

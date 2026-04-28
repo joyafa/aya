@@ -3,7 +3,7 @@ import fs from 'fs-extra'
 import os from 'node:os'
 import path from 'node:path'
 import { handleEvent } from 'share/main/lib/util'
-import { shell as electronShell } from 'electron'
+import { shell as electronShell, clipboard } from 'electron'
 import { isRooted, shell } from './base'
 import map from 'licia/map'
 import filter from 'licia/filter'
@@ -439,6 +439,44 @@ const copyDir: IpcCopyDir = async function (deviceId, src, dest) {
   await fileShell(deviceId, 'cp -r', src, dest)
 }
 
+interface ClipboardFile {
+  path: string
+  name: string
+  isDirectory: boolean
+}
+
+const readClipboardFiles = async function (): Promise<ClipboardFile[]> {
+  const text = clipboard.read('text')
+  if (!text) {
+    return []
+  }
+
+  // 检查是否是文件路径（Windows 路径）
+  const paths = text
+    .split(/[\r\n]+/)
+    .map((p) => p.trim())
+    .filter((p) => p && (p.match(/^[a-zA-Z]:\\/) || p.startsWith('\\\\')))
+
+  // 验证文件是否存在并获取信息
+  const result: ClipboardFile[] = []
+  for (const p of paths) {
+    try {
+      if (await fs.pathExists(p)) {
+        const stat = await fs.stat(p)
+        result.push({
+          path: p,
+          name: path.basename(p),
+          isDirectory: stat.isDirectory(),
+        })
+      }
+    } catch (e) {
+      // 忽略不存在的文件
+    }
+  }
+
+  return result
+}
+
 export async function init(c: Client) {
   client = c
 
@@ -453,4 +491,5 @@ export async function init(c: Client) {
   handleEvent('copyDir', copyDir)
   handleEvent('moveFile', moveFile)
   handleEvent('statFile', statFile)
+  handleEvent('readClipboardFiles', readClipboardFiles)
 }
