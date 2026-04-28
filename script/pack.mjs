@@ -2,9 +2,6 @@ import builder, { publish } from 'electron-builder'
 import isMac from 'licia/isMac.js'
 import isWindows from 'licia/isWindows.js'
 
-// 禁用 Windows 代码签名（避免权限问题）
-process.env.WIN_CODE_SIGNING_SKIP = 'true'
-
 cd('dist')
 
 const pkg = await fs.readJson('package.json')
@@ -37,6 +34,9 @@ const config = {
         target: 'nsis',
       },
     ],
+    // 完全禁用签名和可执行文件编辑
+    signAndEditExecutable: false,
+    sign: null,
   },
   mac: {
     electronLanguages: ['zh_CN', 'en'],
